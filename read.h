@@ -53,13 +53,7 @@
 #define REDIS_ERR_TIMEOUT 7
 #endif //shenzheng 2017-5-22 redis cluster
 
-
-#define REDIS_REPLY_STRING 1
-#define REDIS_REPLY_ARRAY 2
-#define REDIS_REPLY_INTEGER 3
-#define REDIS_REPLY_NIL 4
-#define REDIS_REPLY_STATUS 5
-#define REDIS_REPLY_ERROR 6
+#include "redis_reply.h"
 
 #define REDIS_READER_MAX_BUF (1024*16)  /* Default max unused reader buffer. */
 

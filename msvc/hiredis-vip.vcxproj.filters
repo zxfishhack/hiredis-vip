@@ -54,6 +54,9 @@
     <ClCompile Include="..\win32\net.c">
       <Filter>Source Files\win32</Filter>
     </ClCompile>
+    <ClCompile Include="..\redis_client.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\adlist.h">
@@ -110,5 +113,16 @@
     <ClInclude Include="..\adapters\libuv.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\redis_client.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\redis_reply.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="hiredis-vip.def">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

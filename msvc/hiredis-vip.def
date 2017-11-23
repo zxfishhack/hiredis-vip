@@ -1,0 +1,17 @@
+LIBRARY redis-vip
+EXPORTS
+freeReplyObject = freeReplyObject
+redisClientConnect = redisClientConnect
+redisClientConnectWithTimeout = redisClientConnectWithTimeout
+redisClientReconnect = redisClientReconnect
+redisClientSetTimeout = redisClientSetTimeout
+redisClientEnableKeepAlive = redisClientEnableKeepAlive
+redisClientFree = redisClientFree
+redisClientGetReply = redisClientGetReply
+redisClientAppendFormattedCommand = redisClientAppendFormattedCommand
+redisClientvAppendCommand = redisClientvAppendCommand
+redisClientAppendCommand = redisClientAppendCommand
+redisClientAppendCommandArgv = redisClientAppendCommandArgv
+redisClientvCommand = redisClientvCommand
+redisClientCommand = redisClientCommand
+redisClientCommandArgv = redisClientCommandArgv
