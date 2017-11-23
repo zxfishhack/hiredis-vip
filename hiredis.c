@@ -34,7 +34,10 @@
 #include "fmacros.h"
 #include <string.h>
 #include <stdlib.h>
+#ifdef _WIN32
+#else
 #include <unistd.h>
+#endif
 #include <assert.h>
 #include <errno.h>
 #include <ctype.h>
@@ -602,7 +605,6 @@ static redisContext *redisContextInit(void) {
     c->reader = redisReaderCreate();
     c->tcp.host = NULL;
     c->tcp.source_addr = NULL;
-    c->unix_sock.path = NULL;
     c->timeout = NULL;
 
     if (c->obuf == NULL || c->reader == NULL) {
@@ -616,8 +618,13 @@ static redisContext *redisContextInit(void) {
 void redisFree(redisContext *c) {
     if (c == NULL)
         return;
+#ifdef _WIN32
+	if (c->sock != INVALID_SOCKET)
+		closesocket(c->sock);
+#else
     if (c->fd > 0)
         close(c->fd);
+#endif
     if (c->obuf != NULL)
         sdsfree(c->obuf);
     if (c->reader != NULL)
@@ -626,16 +633,28 @@ void redisFree(redisContext *c) {
         free(c->tcp.host);
     if (c->tcp.source_addr)
         free(c->tcp.source_addr);
+#ifndef _WIN32
     if (c->unix_sock.path)
         free(c->unix_sock.path);
+#endif
     if (c->timeout)
         free(c->timeout);
     free(c);
 }
 
-int redisFreeKeepFd(redisContext *c) {
+#ifdef _WIN32
+SOCKET
+#else
+int
+#endif
+redisFreeKeepFd(redisContext *c) {
+#ifdef _WIN32
+	SOCKET fd = c->sock;
+	c->sock = INVALID_SOCKET;
+#else
     int fd = c->fd;
     c->fd = -1;
+#endif
     redisFree(c);
     return fd;
 }
@@ -643,11 +662,15 @@ int redisFreeKeepFd(redisContext *c) {
 int redisReconnect(redisContext *c) {
     c->err = 0;
     memset(c->errstr, '\0', strlen(c->errstr));
-
+#ifdef _WIN32
+	if (c->sock != INVALID_SOCKET) {
+		closesocket(c->sock);
+	}
+#else
     if (c->fd > 0) {
         close(c->fd);
     }
-
+#endif
     sdsfree(c->obuf);
     redisReaderFree(c->reader);
 
@@ -657,8 +680,10 @@ int redisReconnect(redisContext *c) {
     if (c->connection_type == REDIS_CONN_TCP) {
         return redisContextConnectBindTcp(c, c->tcp.host, c->tcp.port,
                 c->timeout, c->tcp.source_addr);
+#ifndef _WIN32
     } else if (c->connection_type == REDIS_CONN_UNIX) {
         return redisContextConnectUnix(c, c->unix_sock.path, c->timeout);
+#endif
     } else {
         /* Something bad happened here and shouldn't have. There isn't
            enough information in the context to reconnect. */
@@ -723,7 +748,19 @@ redisContext *redisConnectBindNonBlockWithReuse(const char *ip, int port,
     redisContextConnectBindTcp(c,ip,port,NULL,source_addr);
     return c;
 }
+#ifdef _WIN32
+redisContext *redisConnectFd(SOCKET fd) {
+	redisContext *c;
 
+	c = redisContextInit();
+	if (c == NULL)
+		return NULL;
+
+	c->sock = fd;
+	c->flags |= REDIS_BLOCK | REDIS_CONNECTED;
+	return c;
+}
+#else
 redisContext *redisConnectUnix(const char *path) {
     redisContext *c;
 
@@ -759,7 +796,6 @@ redisContext *redisConnectUnixNonBlock(const char *path) {
     redisContextConnectUnix(c,path,NULL);
     return c;
 }
-
 redisContext *redisConnectFd(int fd) {
     redisContext *c;
 
@@ -771,6 +807,7 @@ redisContext *redisConnectFd(int fd) {
     c->flags |= REDIS_BLOCK | REDIS_CONNECTED;
     return c;
 }
+#endif
 
 /* Set read/write timeout on a blocking socket. */
 int redisSetTimeout(redisContext *c, const struct timeval tv) {
@@ -798,8 +835,11 @@ int redisBufferRead(redisContext *c) {
     /* Return early when the context has seen an error. */
     if (c->err)
         return REDIS_ERR;
-
+#ifdef _WIN32
+	nread = recv(c->sock, buf, sizeof(buf), 0);
+#else
     nread = read(c->fd,buf,sizeof(buf));
+#endif
     if (nread == -1) {
         if ((errno == EAGAIN && !(c->flags & REDIS_BLOCK)) || (errno == EINTR)) {
             /* Try again later */
@@ -844,7 +884,11 @@ int redisBufferWrite(redisContext *c, int *done) {
         return REDIS_ERR;
 
     if (sdslen(c->obuf) > 0) {
+#ifdef _WIN32
+		nwritten = send(c->sock, c->obuf, sdslen(c->obuf), 0);
+#else
         nwritten = write(c->fd,c->obuf,sdslen(c->obuf));
+#endif
         if (nwritten == -1) {
             if ((errno == EAGAIN && !(c->flags & REDIS_BLOCK)) || (errno == EINTR)) {
                 /* Try again later */

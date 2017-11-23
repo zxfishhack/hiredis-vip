@@ -32,7 +32,12 @@
 #include "fmacros.h"
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
+#else
 #include <strings.h>
+#endif
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -184,7 +189,7 @@ redisAsyncContext *redisAsyncConnectBindWithReuse(const char *ip, int port,
     __redisAsyncCopyError(ac);
     return ac;
 }
-
+#ifndef _WIN32
 redisAsyncContext *redisAsyncConnectUnix(const char *path) {
     redisContext *c;
     redisAsyncContext *ac;
@@ -202,7 +207,7 @@ redisAsyncContext *redisAsyncConnectUnix(const char *path) {
     __redisAsyncCopyError(ac);
     return ac;
 }
-
+#endif
 int redisAsyncSetConnectCallback(redisAsyncContext *ac, redisConnectCallback *fn) {
     if (ac->onConnect == NULL) {
         ac->onConnect = fn;

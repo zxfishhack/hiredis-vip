@@ -5,6 +5,10 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#ifdef _WIN32
+#define ssize_t size_t
+#endif
+
 #define HI_OK        0
 #define HI_ERROR    -1
 #define HI_EAGAIN   -2

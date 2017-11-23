@@ -35,7 +35,11 @@
 #define __HIREDIS_H
 #include "read.h"
 #include <stdarg.h> /* for va_list */
+#ifdef _WIN32
+#include <WinSock2.h>
+#else
 #include <sys/time.h> /* for struct timeval */
+#endif
 #include <stdint.h> /* uintXX_t, etc */
 #include "sds.h" /* for sds */
 
@@ -79,6 +83,13 @@
  * SO_REUSEADDR is being used. */
 #define REDIS_CONNECT_RETRIES  10
 
+#ifdef _WIN32
+#include <string.h>
+#define __redis_strerror_r(errno, buf, len)                                    \
+    do {                                                                       \
+        strncpy(buf, strerror(errno), (len));                                  \
+    } while (0)
+#else
 /* strerror_r has two completely different prototypes and behaviors
  * depending on system issues, so we need to operate on the error buffer
  * differently depending on which strerror_r we're using. */
@@ -101,6 +112,7 @@
             strncat((buf), err_str, ((len) - 1));                              \
         }                                                                      \
     } while (0)
+#endif
 #endif
 
 #ifdef __cplusplus
@@ -132,14 +144,20 @@ void redisFreeSdsCommand(sds cmd);
 
 enum redisConnectionType {
     REDIS_CONN_TCP,
+#ifndef _WIN32
     REDIS_CONN_UNIX,
+#endif
 };
 
 /* Context for a connection to Redis */
 typedef struct redisContext {
     int err; /* Error flags, 0 when there is no error */
     char errstr[128]; /* String representation of error when applicable */
+#ifdef _WIN32
+	SOCKET sock;
+#else
     int fd;
+#endif
     int flags;
     char *obuf; /* Write buffer */
     redisReader *reader; /* Protocol reader */
@@ -152,10 +170,11 @@ typedef struct redisContext {
         char *source_addr;
         int port;
     } tcp;
-
+#ifndef _WIN32
     struct {
         char *path;
     } unix_sock;
+#endif
 } redisContext;
 
 redisContext *redisConnect(const char *ip, int port);
@@ -165,10 +184,14 @@ redisContext *redisConnectBindNonBlock(const char *ip, int port,
                                        const char *source_addr);
 redisContext *redisConnectBindNonBlockWithReuse(const char *ip, int port,
                                                 const char *source_addr);
+#ifdef _WIN32
+redisContext *redisConnectFd(SOCKET fd);
+#else
 redisContext *redisConnectUnix(const char *path);
 redisContext *redisConnectUnixWithTimeout(const char *path, const struct timeval tv);
 redisContext *redisConnectUnixNonBlock(const char *path);
 redisContext *redisConnectFd(int fd);
+#endif
 
 /**
  * Reconnect the given context using the saved information.
@@ -184,7 +207,12 @@ int redisReconnect(redisContext *c);
 int redisSetTimeout(redisContext *c, const struct timeval tv);
 int redisEnableKeepAlive(redisContext *c);
 void redisFree(redisContext *c);
-int redisFreeKeepFd(redisContext *c);
+#ifdef _WIN32
+SOCKET
+#else
+int
+#endif
+redisFreeKeepFd(redisContext *c);
 int redisBufferRead(redisContext *c);
 int redisBufferWrite(redisContext *c, int *done);
 

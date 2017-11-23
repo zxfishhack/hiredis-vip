@@ -5,3 +5,12 @@
 /*.dylib
 /*.a
 /*.pc
+/msvc/x64/Debug
+/msvc/.vs/hiredis-vip/v14
+/msvc/_ReSharper.Caches/ReSharperPlatformVs146.hiredis-vip.00/AnnotatedMembers
+/msvc/_ReSharper.Caches/ReSharperPlatformVs146.hiredis-vip.00
+/msvc/hiredis-vip.vcxproj.user
+/msvc/hiredis-vip.VC.VC.opendb
+/msvc/hiredis-vip.VC.db
+/msvc/hiredis-vip.suo
+/msvc/hiredis-vip.sdf
